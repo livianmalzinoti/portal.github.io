@@ -1,1 +1,181 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Portal - Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f0f0f0; }
+        #container { width: 100%; max-width: 400px; margin: 50px auto; padding: 20px; background: white; border-radius: 5px; box-shadow: 0 0 10px #aaa; }
+        input, button { width: 100%; margin: 10px 0; padding: 10px; font-size: 16px; }
+        button { background-color: #4287f5; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #2a5ecc; }
+        nav { background-color: #4287f5; color: white; padding: 10px; display: flex; justify-content: space-between; }
+        nav a { color: white; margin: 0 10px; text-decoration: none; font-weight: bold; cursor: pointer; }
+        .card { background: white; margin: 20px; padding: 20px; border-radius: 5px; box-shadow: 0 0 5px #aaa; cursor: pointer; }
+        iframe {border:none; width:100%; height:500px;}
+        #profile-image { width: 150px; height: 150px; object-fit: cover; border-radius: 50%; margin-bottom: 10px; }
+        #logout { cursor: pointer; }
+    </style>
+</head>
+<body>
+<div id="app">
+
+<nav style="display:none" id="menu">
+    <div>
+        <a onclick="showPage('home')">Home</a>
+        <a onclick="showPage('documents')">Documentos</a>
+        <a onclick="showPage('profile')">Perfil</a>
+        <a id="logout" onclick="logout()">Sair</a>
+    </div>
+</nav>
+
+<div id="login" class="page">
+    <div id="container">
+        <h2>Login</h2>
+        <input id="cpf-login" type="text" placeholder="CPF (somente números)" maxlength="11" />
+        <input id="password-login" type="password" placeholder="Senha" />
+        <button onclick="login()">Entrar</button>
+        <p>Não tem conta? <a onclick="showPage('register')" style="cursor:pointer;color:#4287f5;">Cadastre-se</a></p>
+    </div>
+</div>
+
+<div id="register" class="page" style="display:none">
+    <div id="container">
+        <h2>Cadastro</h2>
+        <input id="cpf-register" type="text" placeholder="CPF (somente números)" maxlength="11" />
+        <input id="email-register" type="email" placeholder="E-mail" />
+        <input id="password-register" type="password" placeholder="Senha" />
+        <button onclick="register()">Cadastrar</button>
+        <p>Já tem conta? <a onclick="showPage('login')" style="cursor:pointer;color:#4287f5;">Login</a></p>
+    </div>
+</div>
+
+<div id="home" class="page" style="display:none">
+    <nav>
+        <a onclick="showPage('documents')" class="card">Card Documentos</a>
+        <a onclick="showPage('profile')" class="card">Card Perfil</a>
+    </nav>
+</div>
+
+<div id="documents" class="page" style="display:none">
+    <div id="container">
+        <h2>Carteirinha de Estudante</h2>
+        <button onclick="openCard()">Abrir Carteirinha</button>
+        <br><br>
+        <iframe id="card-pdf" src="" style="display:none;"></iframe>
+    </div>
+</div>
+
+<div id="profile" class="page" style="display:none">
+    <div id="container">
+        <h2>Perfil</h2>
+        <img id="profile-image" src="default-avatar.png" alt="Avatar">
+        <input id="profile-name" type="text" placeholder="Nome completo" />
+        <input id="profile-cpf" type="text" placeholder="CPF" maxlength="11" />
+        <input id="profile-email" type="email" placeholder="E-mail" />
+        <input id="profile-password" type="password" placeholder="Alterar senha" />
+        <input id="profile-photo" type="file" accept="image/*" onchange="previewImage(event)" />
+        <button onclick="saveProfile()">Salvar</button>
+    </div>
+</div>
+
+<script>
+// Simples banco local para cadastro
+let users = JSON.parse(localStorage.getItem('users')) || [];
+let loggedUser = JSON.parse(localStorage.getItem('loggedUser')) || null;
+
+function showPage(page) {
+    document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+    document.getElementById(page).style.display = 'block';
+    document.getElementById('menu').style.display = loggedUser ? 'flex' : 'none';
+
+    if(page === 'profile' && loggedUser) {
+        document.getElementById('profile-name').value = loggedUser.name || '';
+        document.getElementById('profile-cpf').value = loggedUser.cpf || '';
+        document.getElementById('profile-email').value = loggedUser.email || '';
+        document.getElementById('profile-image').src = loggedUser.photo || 'default-avatar.png';
+    }
+}
+
+function login() {
+    const cpf = document.getElementById('cpf-login').value;
+    const password = document.getElementById('password-login').value;
+    const user = users.find(u => u.cpf === cpf && u.password === password);
+    if(user) {
+        loggedUser = user;
+        localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
+        showPage('home');
+    } else {
+        alert('CPF ou senha inválidos');
+    }
+}
+
+function register() {
+    const cpf = document.getElementById('cpf-register').value;
+    const email = document.getElementById('email-register').value;
+    const password = document.getElementById('password-register').value;
+    if(users.find(u => u.cpf === cpf)) {
+        alert('Usuário já cadastrado');
+        return;
+    }
+    let newUser = { cpf, email, password, name: '', photo: '' };
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    alert('Cadastro efetuado com sucesso! Faça login');
+    showPage('login');
+}
+
+function logout() {
+    loggedUser = null;
+    localStorage.removeItem('loggedUser');
+    showPage('login');
+}
+
+function saveProfile() {
+    if(!loggedUser) return;
+    loggedUser.name = document.getElementById('profile-name').value;
+    loggedUser.cpf = document.getElementById('profile-cpf').value;
+    loggedUser.email = document.getElementById('profile-email').value;
+    const newPass = document.getElementById('profile-password').value;
+    if(newPass) loggedUser.password = newPass;
+    localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
+    users = users.map(u => u.cpf === loggedUser.cpf ? loggedUser : u);
+    localStorage.setItem('users', JSON.stringify(users));
+    alert('Perfil salvo!');
+}
+
+function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function(){
+        document.getElementById('profile-image').src = reader.result;
+        if(loggedUser) {
+          loggedUser.photo = reader.result;
+          localStorage.setItem('loggedUser', JSON.stringify(loggedUser));
+          users = users.map(u => u.cpf === loggedUser.cpf ? loggedUser : u);
+          localStorage.setItem('users', JSON.stringify(users));
+        }
+    };
+    reader.readAsDataURL(event.target.files[0]);
+}
+
+function openCard() {
+    // PDF da carteirinha - coloque o arquivo na raiz do repo com este nome
+    const pdfUrl = 'carteirinha.pdf';
+    const iframe = document.getElementById('card-pdf');
+    iframe.src = pdfUrl;
+    iframe.style.display = 'block';
+    iframe.scrollIntoView({behavior: 'smooth'});
+}
+
+window.onload = function() {
+    if(loggedUser) {
+        showPage('home');
+    } else {
+        showPage('login');
+    }
+}
+</script>
+
+</body>
+</html>
